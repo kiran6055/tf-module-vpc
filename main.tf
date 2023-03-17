@@ -55,6 +55,7 @@ resource "aws_internet_gateway" "igw" {
   )
 }
 
+#creating route table for public and peering with already vpc which was there by aws
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
@@ -74,6 +75,11 @@ resource "aws_route_table" "public" {
     )
 }
 
+resource "aws_route_table_association" "public-rt-assocation" {
+  count = length(aws_subnet.public)
+  subnet_id      = aws_subnet.*.id.[count.index]
+  route_table_id = aws_route_table.public.id
+}
 
 #// create EC2 instance
 
