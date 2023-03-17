@@ -1,3 +1,4 @@
+# creating a vpc
 resource "aws_vpc" "main" {
   cidr_block = var.cidr_block
   tags       = merge(
@@ -6,6 +7,7 @@ resource "aws_vpc" "main" {
     )
 }
 
+# creating two subnets
 resource "aws_subnet" "main" {
   count = length(var.subnets_cidr)
   vpc_id     = aws_vpc.main.id
@@ -17,6 +19,7 @@ resource "aws_subnet" "main" {
   )
 }
 
+#creating one way peering connection between subnets with already available vpc
 resource "aws_vpc_peering_connection" "peer" {
   peer_owner_id = data.aws_caller_identity.current.account_id
   peer_vpc_id   = var.default_vpc_id
@@ -29,24 +32,28 @@ resource "aws_vpc_peering_connection" "peer" {
   )
 }
 
+#creating two way peer connection b/w already vpc and new subnet
 resource "aws_route" "default" {
   route_table_id            = aws_vpc.main.default_route_table_id
   destination_cidr_block    = "172.31.0.0/16"
   vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 }
 
+#attaching igw to route table and subnets
 resource "aws_route" "igw-route" {
   route_table_id            = aws_vpc.main.default_route_table_id
   destination_cidr_block    = "0.0.0.0/0"
   gateway_id                = aws_internet_gateway.igw.id
 }
 
+#creating route table
 resource "aws_route" "default-vpc" {
   route_table_id            = data.aws_vpc.default.main_route_table_id
   destination_cidr_block    = var.cidr_block
   vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 }
 
+# creating internet gateway
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
 
