@@ -55,7 +55,7 @@ resource "aws_internet_gateway" "igw" {
   )
 }
 
-#creating route table for public and peering with already vpc which was there by aws
+#creating route table for public and attaching igw and peering with already vpc which was there by aws
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
@@ -75,16 +75,19 @@ resource "aws_route_table" "public" {
     )
 }
 
+# associating route table with public subnet
 resource "aws_route_table_association" "public-rt-assocation" {
   count           = length(aws_subnet.public)
   subnet_id       = aws_subnet.public.*.id[count.index]
   route_table_id  = aws_route_table.public.id
 }
 
+# creating elastice ip
 resource "aws_eip" "ngw-eip" {
   vpc      = true
 }
 
+# associating nate gateway to public sunet, in office we need to creat 2 or mutliple nat gateway based on requirment but for lab we created only one
 resource "aws_nat_gateway" "ngw" {
   allocation_id = aws_eip.ngw-eip.id
   subnet_id     = aws_subnet.public.*.id[0]
@@ -96,6 +99,31 @@ resource "aws_nat_gateway" "ngw" {
 
   //depends_on = [aws_internet_gateway.example]
 }
+
+# creating a private subnet route table and peering the connection
+
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.main.id
+
+
+  route {
+    cidr_block                = 0.0.0.0/0
+    vpc_peering_connection_id = aws_nat_gateway.ngw.id
+  }
+
+  tags       = merge(
+    local.common_tags,
+    { Name = "${var.env}-private-route-table" }
+  )
+}
+
+# associating route table with private subnet
+resource "aws_route_table_association" "private-rt-assocation" {
+  count           = length(aws_subnet.private)
+  subnet_id       = aws_subnet.private.*.id[count.index]
+  route_table_id  = aws_route_table.private.id
+}
+
 
 #// create EC2 instance
 
