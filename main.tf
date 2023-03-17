@@ -107,7 +107,7 @@ resource "aws_route_table" "private" {
 
 
   route {
-    cidr_block                = 0.0.0.0/0
+    cidr_block                = "0.0.0.0/0"
     vpc_peering_connection_id = aws_nat_gateway.ngw.id
   }
 
