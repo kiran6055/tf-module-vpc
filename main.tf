@@ -105,10 +105,15 @@ resource "aws_nat_gateway" "ngw" {
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
 
+  route {
+    cidr_block                = data.aws_vpc.default.cidr_block
+    vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
+  }
+
 
   route {
     cidr_block                = "0.0.0.0/0"
-    vpc_peering_connection_id = aws_nat_gateway.ngw.id
+    nat_gateway_id = aws_nat_gateway.ngw.id
   }
 
   tags       = merge(
