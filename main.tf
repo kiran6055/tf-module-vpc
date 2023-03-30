@@ -140,7 +140,7 @@ resource "aws_route" "peer" {
   vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 }
 
-create EC2 instance
+#create EC2 instance
 
 data "aws_ami" "centos8" {
   most_recent = true
