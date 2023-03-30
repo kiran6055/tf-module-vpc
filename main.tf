@@ -7,31 +7,6 @@ resource "aws_vpc" "main" {
     )
 }
 
-# creating two publicsubnets
-resource "aws_subnet" "public" {
-  count      = length(var.public_subnets_cidr)
-  vpc_id     = aws_vpc.main.id
-  cidr_block = var.public_subnets_cidr[count.index]
-  availability_zone = var.availability_zones[count.index]
-
-  tags       = merge(
-    local.common_tags,
-    { Name = "${var.env}-public-subnet-${count.index+1}"  }
-  )
-}
-
-# creating two private
-resource "aws_subnet" "private" {
-  count      = length(var.private_subnets_cidr)
-  vpc_id     = aws_vpc.main.id
-  cidr_block = var.private_subnets_cidr[count.index]
-  availability_zone = var.availability_zones[count.index]
-
-  tags       = merge(
-    local.common_tags,
-    { Name = "${var.env}-private-subnet-${count.index+1}"  }
-  )
-}
 
 #creating one way peering connection between subnets with already available vpc
 resource "aws_vpc_peering_connection" "peer" {
@@ -57,32 +32,7 @@ resource "aws_internet_gateway" "igw" {
   )
 }
 
-#creating route table for public and attaching igw and peering with already vpc which was there by aws
-resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.main.id
 
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.igw.id
-  }
-
-  route {
-    cidr_block                = data.aws_vpc.default.cidr_block
-    vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
-  }
-
-    tags       = merge(
-      local.common_tags,
-      { Name = "${var.env}-public-route-table" }
-    )
-}
-
-# associating route table with public subnet
-resource "aws_route_table_association" "public-rt-assocation" {
-  count           = length(aws_subnet.public)
-  subnet_id       = aws_subnet.public.*.id[count.index]
-  route_table_id  = aws_route_table.public.id
-}
 
 # creating elastice ip
 resource "aws_eip" "ngw-eip" {
@@ -90,46 +40,17 @@ resource "aws_eip" "ngw-eip" {
 }
 
 # associating nate gateway to public sunet, in office we need to creat 2 or mutliple nat gateway based on requirment but for lab we created only one
-resource "aws_nat_gateway" "ngw" {
-  allocation_id = aws_eip.ngw-eip.id
-  subnet_id     = aws_subnet.public.*.id[0]
+#resource "aws_nat_gateway" "ngw" {
+#  allocation_id = aws_eip.ngw-eip.id
+#  subnet_id     = aws_subnet.public.*.id[0]
 
-  tags       = merge(
-    local.common_tags,
-    { Name = "${var.env}-public-ngw" }
-  )
+#  tags       = merge(
+#    local.common_tags,
+#    { Name = "${var.env}-public-ngw" }
+#  )
 
   //depends_on = [aws_internet_gateway.example]
-}
-
-# creating a private subnet route table and peering the connection
-
-resource "aws_route_table" "private" {
-  vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block                = data.aws_vpc.default.cidr_block
-    vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
-  }
-
-
-  route {
-    cidr_block                = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.ngw.id
-  }
-
-  tags       = merge(
-    local.common_tags,
-    { Name = "${var.env}-private-route-table" }
-  )
-}
-
-# associating route table with private subnet
-resource "aws_route_table_association" "private-rt-assocation" {
-  count           = length(aws_subnet.private)
-  subnet_id       = aws_subnet.private.*.id[count.index]
-  route_table_id  = aws_route_table.private.id
-}
+#}
 
 
 # creating 2 way peer connection that you can acces both sides from any way
@@ -138,57 +59,5 @@ resource "aws_route" "peer" {
   route_table_id            = data.aws_vpc.default.main_route_table_id
   destination_cidr_block    = var.cidr_block
   vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
-}
-
-#create EC2 instance
-
-data "aws_ami" "centos8" {
-  most_recent = true
-  name_regex  = "Centos-8-DevOps-Practice"
-  owners      = ["973714476881"]
-}
-
-resource "aws_instance" "web" {
-  ami                    = data.aws_ami.centos8.id
-  instance_type          = "t3.micro"
-  vpc_security_group_ids = [aws_security_group.allow_tls.id]
-  subnet_id              = aws_subnet.private.*.id[0]
-
-  tags = {
-    Name = "test-centos8"
-  }
-}
-
-resource "aws_security_group" "allow_tls" {
-  name        = "allow_tls"
-  description = "Allow TLS inbound traffic"
-  vpc_id      = aws_vpc.main.id
-
-  ingress {
-    description = "TLS from VPC"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  ingress {
-    description = "http from VPC"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port        = 0
-    to_port          = 0
-    protocol         = "-1"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
-  }
-
-  tags = {
-    Name = "allow_tls"
-  }
 }
 
