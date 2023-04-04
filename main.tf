@@ -26,36 +26,5 @@ resource "aws_route" "r" {
   vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 }
 
-# creating internet gateway
-resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.main.id
-
-  tags       = merge(
-    local.common_tags,
-    { Name = "${var.env}-igw" }
-  )
-}
-
-
-
-# creating elastice ip
-resource "aws_eip" "ngw-eip" {
-  vpc      = true
-}
-
-# associating nate gateway to public sunet, in office we need to creat 2 or mutliple nat gateway based on requirment but for lab we created only one
-resource "aws_nat_gateway" "ngw" {
-  allocation_id = aws_eip.ngw-eip.id
-  subnet_id     = var.public_subnets_id[0]
-
-  tags       = merge(
-    local.common_tags,
-    { Name = "${var.env}-public-ngw" }
-  )
-
-}
-
-
-# creating 2 way peer connection that you can acces both sides from any way
 
 
