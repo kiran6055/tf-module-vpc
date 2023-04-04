@@ -21,6 +21,12 @@ resource "aws_vpc_peering_connection" "peer" {
   )
 }
 
+resource "aws_route" "r" {
+  route_table_id            = data.aws_vpc.default.main_route_table_id
+  destination_cidr_block    = var.cidr_block
+  vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
+}
+
 
 # creating internet gateway
 resource "aws_internet_gateway" "igw" {
@@ -55,9 +61,4 @@ resource "aws_eip" "ngw-eip" {
 
 # creating 2 way peer connection that you can acces both sides from any way
 
-resource "aws_route" "r" {
-  route_table_id            = data.aws_vpc.default.main_route_table_id
-  destination_cidr_block    = var.cidr_block
-  vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
-}
 
