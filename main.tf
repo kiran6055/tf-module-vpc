@@ -14,8 +14,7 @@ resource "aws_vpc_peering_connection" "peer" {
   peer_vpc_id   = var.default_vpc_id
   vpc_id        = aws_vpc.main.id
   auto_accept   = true
-
-  tags       = merge(
+  tags = merge(
     local.common_tags,
     { Name = "${var.env}-peering" }
   )
@@ -26,7 +25,6 @@ resource "aws_route" "r" {
   destination_cidr_block    = var.cidr_block
   vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 }
-
 
 # creating internet gateway
 resource "aws_internet_gateway" "igw" {
