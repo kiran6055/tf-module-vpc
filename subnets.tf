@@ -6,11 +6,11 @@ module "subnets" {
   availability_zone         = var.availability_zone
 
 
-  for_each                  = var.subnets
+  for_each                  = var.public_subnets
   cidr_block                = each.value.cidr_block
   name                      = each.value.name
   internet_gw               = lookup(each.value, "internet_gw", false)
-#  nat_gw                    = lookup(each.value, "nat_gw", false)
+  nat_gw                    = lookup(each.value, "nat_gw", false)
 
 
 
@@ -19,3 +19,4 @@ module "subnets" {
   gateway_id                = aws_internet_gateway.gw.id
 
 }
+
