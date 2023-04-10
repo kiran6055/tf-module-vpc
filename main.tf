@@ -40,7 +40,7 @@ resource "aws_internet_gateway" "gw" {
 # associating nate gateway to public sunet, in office we need to creat 2 or mutliple nat gateway based on requirment but for lab we created only one
 resource "aws_nat_gateway" "ngw" {
   allocation_id = aws_eip.ngw-eip.id
-  subnet_id     = lookup(lookup(module.public_subnets, "public" ""), "subnet_ids", null)[0]
+  subnet_id     = lookup(lookup(module.public_subnets, "public" ""), "subnet_ids", "")[0]
 
   tags       = merge(
     local.common_tags,
